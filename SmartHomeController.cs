@@ -1,12 +1,13 @@
 ﻿using MySmartHome.Devices;
+using MySmartHome.Enums;
 
 namespace MySmartHome
 {
     public class SmartHomeController
     {
-        public event Action<string>? OnDayTimeChanged;
-        public event Action<int>? OnTemperatureChanged;
-        public event Action? OnMotionDetected;
+        public event Action<DayTime>? DayTimeChanged;
+        public event Action<int>? TemperatureChanged;
+        public event Action? MotionDetected;
 
         private readonly List<ISmartDevice> _devices = new List<ISmartDevice>();
         private readonly EventLogger _logger = new EventLogger();
@@ -15,31 +16,38 @@ namespace MySmartHome
 
         public void RegisterDevice(ISmartDevice device)
         {
-            string deviceName = device.GetType().Name;
-            if (_devices.Contains(device))
+            if (_devices.Exists(d => d.Name.Equals(device.Name, StringComparison.OrdinalIgnoreCase)))
             {
-                _logger.Log($"Device {deviceName} is already registered.");
-                Console.WriteLine($"Device {deviceName} is already registered.");
+                _logger.Log($"Device {device.Name} is already registered.");
+                Console.WriteLine($"Device {device.Name} is already registered.");
                 return;
             }
             _devices.Add(device);
-            Console.WriteLine($"Device registered: {deviceName}.");
-            _logger.Log($"Device registered: {deviceName}.");
+            Console.WriteLine($"Device registered: {device.Name}.");
+            _logger.Log($"Device registered: {device.Name}.");
             // Implement adding a device to the devices list.
         }
 
         public void ChangeDayTime(string timeOfDay)
         {
-            Console.WriteLine($"Event: Daytime changed to {timeOfDay}.");
-            _logger.Log($"Daytime changed to {timeOfDay}.");
-            SafeInvoke(OnDayTimeChanged, timeOfDay, nameof(OnDayTimeChanged));
+            if (Enum.TryParse<DayTime>(timeOfDay, true, out var dayTime))
+            {
+                Console.WriteLine($"Event: Daytime changed to {dayTime}.");
+                _logger.Log($"Daytime changed to {dayTime}.");
+                SafeInvoke(DayTimeChanged, dayTime, nameof(DayTimeChanged));
+            }
+            else
+            {
+                _logger.Log($"Error: Invalid daytime input: {timeOfDay}.");
+                Console.WriteLine($"Error: Invalid daytime input: {timeOfDay}. Excepted 'Morning' or 'Night'.");
+            }
         }
 
         public void ChangeTemperature(int temperature)
         {
             Console.WriteLine($"Event: Temperature changed to {temperature}°C.");
             _logger.Log($"Daytime changed to {temperature}°C.");
-            SafeInvoke(OnTemperatureChanged, temperature, nameof(OnTemperatureChanged));
+            SafeInvoke(TemperatureChanged, temperature, nameof(TemperatureChanged));
             // Implement triggering the OnTemperatureChanged event and logging the event.
         }
 
@@ -47,14 +55,14 @@ namespace MySmartHome
         {
             Console.WriteLine($"Event: Motion detected.");
             _logger.Log($"Motion detected.");
-            SafeInvoke(OnMotionDetected, nameof(OnMotionDetected));
+            SafeInvoke(MotionDetected, nameof(MotionDetected));
             // Implement triggering the OnMotionDetected event and logging the event.
         }
     
         public void TriggerDevice(string deviceName, string command)
         {
-            ISmartDevice? device = _devices.Find(d =>
-                d.GetType().Name.Equals(deviceName, StringComparison.OrdinalIgnoreCase));
+            ISmartDevice? device = _devices.FirstOrDefault(d =>
+                d.Name.Equals(deviceName, StringComparison.OrdinalIgnoreCase));
             
             if (device is null)
             {
@@ -65,13 +73,13 @@ namespace MySmartHome
             
             try
             {
-                _logger.Log($"Command {command} sent to {device.GetType().Name}.");
+                _logger.Log($"Command {command} sent to {device.Name}.");
                 device.ExecuteCommand(command);
             }
             catch (Exception ex)
             {
-                _logger.Log($"Command {command} failed on {device.GetType().Name}: {ex.Message}.");
-                Console.WriteLine($"Command {command} failed on {device.GetType().Name}: {ex.Message}.");
+                _logger.Log($"Command {command} failed on {device.Name}: {ex.Message}.");
+                Console.WriteLine($"Command {command} failed on {device.Name}: {ex.Message}.");
             }   
             // Implement finding the device by name, calling ExecuteCommand, and logging.
         }

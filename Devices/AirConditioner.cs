@@ -1,37 +1,44 @@
-﻿namespace MySmartHome.Devices
+﻿using MySmartHome.Enums;
+
+namespace MySmartHome.Devices
 {
-    public class AirConditioner(EventLogger logger) : ISmartDevice
+    public class AirConditioner(string name, EventLogger logger) : ISmartDevice
     {
+        public string Name { get; } = name;
         private int _minTemperature = 18;
         private int _maxTemperature = 25;
         private bool _isOn;
 
-        public void HandleEvent(string eventType, object eventData)
+        public void OnDayTimeChanged(DayTime timeOfDay) {}
+
+        public void OnTemperatureChanged(int temperature)
         {
-            if (eventType.Equals("TemperatureChanged", StringComparison.OrdinalIgnoreCase))
+            try
             {
-                int temperature = (int)eventData;
-                try
+                if (temperature > _maxTemperature && !_isOn)
                 {
-                    if (temperature > _maxTemperature && !_isOn)
-                    {
-                        _isOn = true;
-                        Console.WriteLine("Air Conditioner turned on (High Temperature).");
-                        logger.Log($"Air Conditioner turned on (High Temperature).");
-                    }
-                    else if (temperature < _minTemperature && _isOn)
-                    {
-                        _isOn = false;
-                        Console.WriteLine("Air Conditioner turned off (Low Temperature).");
-                        logger.Log("Air Conditioner turned off (Low Temperature).");
-                    }
+                    _isOn = true;
+                    Console.WriteLine($"{Name} turned on (High Temperature).");
+                    logger.Log($"{Name} turned on (High Temperature).");
                 }
-                catch (Exception ex)
+                else if (temperature < _minTemperature && _isOn)
                 {
-                    logger.Log($"Error in Air Conditioner HandleEvent: {ex.Message}");
+                    _isOn = false;
+                    Console.WriteLine($"{Name} turned off (Low Temperature).");
+                    logger.Log($"{Name} turned off (Low Temperature).");
+                }
+                else
+                {
+                    logger.Log($"{Name} ignored TemperatureChanged: {temperature}");
                 }
             }
+            catch (Exception ex)
+            {
+                logger.Log($"Error in {Name} OnTemperatureChanged: {ex.Message}");
+            }
         }
+
+        public void OnMotionDetected() {}
 
         public void Configure(Dictionary<string, object> settings)
         {
@@ -40,8 +47,8 @@
             if (settings.TryGetValue("MaxTemperature", out var maxTemperature))
                 _maxTemperature = (int) maxTemperature;
 
-            Console.WriteLine($"Air Conditioner configured: Min={_minTemperature}°C, Max={_maxTemperature}°C.");
-            logger.Log($"Air Conditioner configured: Min={_minTemperature}°C, Max={_maxTemperature}°C."); 
+            Console.WriteLine($"{Name} configured: Min={_minTemperature}°C, Max={_maxTemperature}°C.");
+            logger.Log($"{Name} configured: Min={_minTemperature}°C, Max={_maxTemperature}°C."); 
         }
 
         public void ExecuteCommand(string command)
@@ -51,24 +58,24 @@
                 if (command.Equals("On", StringComparison.OrdinalIgnoreCase))
                 {
                     _isOn = true;
-                    Console.WriteLine("Air Conditioner manually turned on.");
-                    logger.Log($"Air Conditioner manually turned on.");
+                    Console.WriteLine($"{Name} manually turned on.");
+                    logger.Log($"{Name} manually turned on.");
                 }
                 else if (command.Equals("Off", StringComparison.OrdinalIgnoreCase))
                 {
                     _isOn = false;
-                    Console.WriteLine("Air Conditioner manually turned off.");
-                    logger.Log("Air Conditioner manually turned off.");
+                    Console.WriteLine($"{Name} manually turned off.");
+                    logger.Log($"{Name} manually turned off.");
                 }
                 else
                 {
-                    Console.WriteLine("Invalid command for Air Conditioner.");
-                    logger.Log("Invalid command for Air Conditioner.");
+                    Console.WriteLine($"Invalid command for {Name}.");
+                    logger.Log($"Invalid command for {Name}.");
                 }
             }
             catch (Exception ex)
             {
-                logger.Log($"Error in Air Conditioner ExecuteCommand: {ex.Message}");
+                logger.Log($"Error in {Name} ExecuteCommand: {ex.Message}");
             }
         }
     }
