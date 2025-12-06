@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace SmartHomeSystem
+﻿namespace MySmartHome
 {
     public class EventLogger
     {

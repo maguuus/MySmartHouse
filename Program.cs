@@ -1,20 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.Metrics;
-using MySmartHome.Devices;
+﻿using MySmartHome.Devices;
 
-namespace SmartHomeSystem
+namespace MySmartHome
 {
     class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
             SmartHomeController controller = new SmartHomeController();
 
             // Create devices
-            Light light = new Light();
-            AirConditioner airConditioner = new AirConditioner();
-            Heater heater = new Heater();
+            Light light = new Light(controller.Logger);
+            AirConditioner airConditioner = new AirConditioner(controller.Logger);
+            Heater heater = new Heater(controller.Logger);
 
             // Register devices
             controller.RegisterDevice(light);
@@ -38,23 +35,26 @@ namespace SmartHomeSystem
             while (true)
             {
                 Console.WriteLine("Menu:\n1. Trigger Event\n2. Control Device\n3. Show Event Log\n4. Exit");
-                string choice = Console.ReadLine();
+                string choice = Console.ReadLine() ?? "";
 
                 if (choice == "1")
                 {
                     Console.WriteLine("Select event:\n1. Change Daytime\n2. Change Temperature\n3. Detect Motion");
-                    string eventChoice = Console.ReadLine();
+                    string eventChoice = Console.ReadLine() ?? "";
                     switch (eventChoice)
                     {
                         case "1":
                             Console.Write("Enter daytime (Morning/Night): ");
-                            string timeOfDay = Console.ReadLine();
+                            string timeOfDay = Console.ReadLine() ?? "";
                             controller.ChangeDayTime(timeOfDay);
                             break;
                         case "2":
                             Console.Write("Enter temperature: ");
-                            int temp = int.Parse(Console.ReadLine());
-                            controller.ChangeTemperature(temp);
+                            string tempInput = Console.ReadLine() ?? "";
+                            if (int.TryParse(tempInput, out int temp))
+                                controller.ChangeTemperature(temp);
+                            else
+                                Console.WriteLine("Invalid temperature input.");
                             break;
                         case "3":
                             controller.DetectMotion();
@@ -64,9 +64,9 @@ namespace SmartHomeSystem
                 else if (choice == "2")
                 {
                     Console.Write("Enter device name: ");
-                    string deviceName = Console.ReadLine();
+                    string deviceName = Console.ReadLine() ?? "";
                     Console.Write("Enter command (On/Off): ");
-                    string command = Console.ReadLine();
+                    string command = Console.ReadLine() ?? "";
                     controller.TriggerDevice(deviceName, command);
                 }
                 else if (choice == "3")

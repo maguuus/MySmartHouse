@@ -1,58 +1,71 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace MySmartHome.Devices
+﻿namespace MySmartHome.Devices
 {
-    public class Heater : ISmartDevice
+    public class Heater(EventLogger logger) : ISmartDevice
     {
-        private int minTemperature = 10;
-        private bool isOn;
+        private int _minTemperature = 10;
+        private bool _isOn;
 
         public void HandleEvent(string eventType, object eventData)
         {
-            if (eventType == "TemperatureChanged")
+            if (eventType.Equals("TemperatureChanged", StringComparison.OrdinalIgnoreCase))
             {
-                int temperature = (int)eventData;
-                if (temperature >= minTemperature && isOn)
+                try
                 {
-                    isOn = false;
-                    Console.WriteLine("Heater turned off (Normal Temperature).");
+                    int temperature = (int)eventData;
+                    if (temperature >= _minTemperature && _isOn)
+                    {
+                        _isOn = false;
+                        Console.WriteLine("Heater turned off (Normal Temperature).");
+                        logger.Log("Heater turned off (Normal Temperature).");
+                    }
+                    else if (temperature < _minTemperature && !_isOn)
+                    {
+                        _isOn = true;
+                        Console.WriteLine("Heater turned on (Low Temperature).");
+                        logger.Log("Heater turned on (Low Temperature).");
+                    }
                 }
-                else if (temperature < minTemperature && !isOn)
+                catch (Exception ex)
                 {
-                    isOn = true;
-                    Console.WriteLine("Heater turned on (Low Temperature).");
+                    logger.Log($"Error in Heater HandleEvent: {ex.Message}");
                 }
             }
-            // Implement handling "TemperatureChanged" event:
-            // Turn on heater if temperature is below minTemperature.
-            // Turn off heater if temperature is above or equal to minTemperature.
         }
 
         public void Configure(Dictionary<string, object> settings)
         {
-            if (settings.ContainsKey("MinTemperature"))
-                minTemperature = (int)settings["MinTemperature"];
+            if (settings.TryGetValue("MinTemperature", out var minTemperature))
+                _minTemperature = (int)minTemperature;
             
-            Console.WriteLine($"Heater configured: Min={minTemperature}°C.");
-            // Implement configuring the minimum temperature for turning on the heater.
+            Console.WriteLine($"Heater configured: Min={_minTemperature}°C.");
+            logger.Log($"Heater configured: Min={_minTemperature}°C.");
         }
 
         public void ExecuteCommand(string command)
         {
-            if (command == "On")
+            try
             {
-                isOn = true;
-                Console.WriteLine("Heater manually turned on.");
+                if (command.Equals("On", StringComparison.OrdinalIgnoreCase))
+                {
+                    _isOn = true;
+                    Console.WriteLine("Heater manually turned on.");
+                    logger.Log("Heater manually turned on.");
+                }
+                else if (command.Equals("Off", StringComparison.OrdinalIgnoreCase))
+                {
+                    _isOn = false;
+                    Console.WriteLine("Heater manually turned off.");
+                    logger.Log("Heater manually turned off.");
+                }
+                else
+                {
+                    Console.WriteLine("Invalid command for Heater.");
+                    logger.Log("Invalid command for Heater.");
+                }
             }
-            else if (command == "Off")
+            catch (Exception ex)
             {
-                isOn = false;
-                Console.WriteLine("Heater manually turned off.");
-            }
-            else
-            {
-                Console.WriteLine("Invalid command for Heater.");
+                logger.Log($"Error in Heater ExecuteCommand: {ex.Message}");
             }
         }
     }
